@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quản lý tiền trọ - 62 Hoàng Thế Thiện</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
+header{background:#1769aa;color:#fff;padding:22px 24px}header h1{margin:0 0 5px;font-size:24px}
+.container{max-width:1450px;margin:20px auto;padding:0 16px}.toolbar,.panel,.card,.table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 8px #0000000d}
+.toolbar{padding:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}.card{padding:16px}.card small{color:#68737d}.card strong{display:block;font-size:21px;margin-top:6px}
+button,input{font:inherit;padding:9px 11px;border-radius:8px;border:1px solid #ccd3d9}button{cursor:pointer;border:0;background:#1769aa;color:#fff}.secondary{background:#e9eef3;color:#24313d}.success{background:#2e7d32}.danger{background:#c62828}
+.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:1400px}th,td{padding:10px;border-bottom:1px solid #edf0f2;text-align:left;white-space:nowrap}th{background:#f8fafb;font-size:13px;color:#5d6872}.money{font-weight:bold}.paid{color:#2e7d32;font-weight:bold}.unpaid{color:#c62828;font-weight:bold}.empty{text-align:center;padding:35px;color:#75808a}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:15px;z-index:10}.modal.show{display:flex}.box{background:#fff;border-radius:14px;padding:22px;max-width:760px;width:100%;max-height:92vh;overflow:auto}.box h2{margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:13px;margin-bottom:5px;color:#58636d}.field input{width:100%}.hint{background:#eef6fc;border-left:4px solid #1769aa;padding:10px;margin:12px 0;font-size:13px;line-height:1.5}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+@media(max-width:800px){.cards{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>🏠 HỆ THỐNG CĂN HỘ 62 HOÀNG THẾ THIỆN</h1>
+<p>Quản lý phòng • tiền phòng • điện • nước + giặt + rác • biên lai</p>
+</header>
+<div class="container">
+<div class="toolbar">
+<label><b>Tháng:</b> <input type="month" id="month"></label>
+<button onclick="openRoom()">+ Thêm phòng</button>
+<button class="secondary" onclick="openSettings()">⚙ Cài đặt biên lai</button>
+<button class="secondary" onclick="backup()">💾 Sao lưu</button>
+<button class="secondary" onclick="document.getElementById('restore').click()">↩ Khôi phục</button>
+<input id="restore" type="file" accept=".json" hidden onchange="restore(event)">
+</div>
+<div class="cards">
+<div class="card"><small>Tổng số phòng</small><strong id="roomCount">0</strong></div>
+<div class="card"><small>Có dữ liệu tháng này</small><strong id="activeCount">0</strong></div>
+<div class="card"><small>Tổng phải thu</small><strong id="due">0 ₫</strong></div>
+<div class="card"><small>Đã thu / Còn lại</small><strong id="paidRemain">0 ₫ / 0 ₫</strong></div>
+</div>
+<div class="panel" style="padding:12px;margin-bottom:16px">
+<b>Nguyên tắc:</b> hồ sơ phòng (tên phòng, số người, tiền trọ, ngày vào ở, nước + giặt + rác/người) chỉ nhập một lần. Mỗi tháng chỉ nhập số điện mới; số điện cũ tự lấy từ tháng trước.
+</div>
+<div class="table-wrap">
+<table><thead><tr>
+<th>Phòng</th><th>Số người</th><th>Tiền phòng</th><th>Ngày vào</th><th>Kỳ tiền</th>
+<th>Điện cũ</th><th>Điện mới</th><th>Điện dùng</th><th>Tiền điện</th><th>Nước + giặt + rác</th><th>Tổng</th><th>Trạng thái</th><th>Thao tác</th>
+</tr></thead><tbody id="tbody"></tbody></table>
+</div>
+</div>
+
+<div class="modal" id="roomModal"><div class="box">
+<h2 id="roomTitle">Thêm phòng</h2>
+<div class="hint">Thông tin này được lưu làm <b>thông tin cố định</b> của phòng. Các tháng sau không phải nhập lại.</div>
+<div class="grid">
+<div class="field"><label>Tên phòng</label><input id="room"></div>
+<div class="field"><label>Số người</label><input id="people" type="number" min="0" value="1"></div>
+<div class="field"><label>Tiền trọ cố định (đ)</label><input id="rent" type="number" min="0" value="3300000"></div>
+<div class="field"><label>Ngày bắt đầu vào ở</label><input id="moveIn" type="date"></div>
+<div class="field"><label>Nước + giặt + rác/người (đ)</label><input id="waterPrice" type="number" min="0" value="100000"></div>
+<div class="field"><label>Giá điện/kWh (đ)</label><input id="elecPrice" type="number" min="0" value="4000"></div>
+<div class="field"><label>Số điện ban đầu</label><input id="initialMeter" type="number" min="0" value="0"></div>
+</div>
+<div class="actions"><button class="secondary" onclick="closeM('roomModal')">Hủy</button><button onclick="saveRoom()">Lưu</button></div>
+</div></div>
+
+<div class="modal" id="meterModal"><div class="box">
+<h2>Nhập số điện tháng</h2><div class="hint" id="meterHint"></div>
+<div class="grid">
+<div class="field"><label>Phòng</label><input id="meterRoom" disabled></div>
+<div class="field"><label>Tháng</label><input id="meterMonth" disabled></div>
+<div class="field"><label>Số điện cũ</label><input id="oldMeter" disabled></div>
+<div class="field"><label>Số điện mới</label><input id="newMeter" type="number" min="0"></div>
+</div>
+<div class="actions"><button class="secondary" onclick="closeM('meterModal')">Hủy</button><button onclick="saveMeter()">Lưu số điện</button></div>
+</div></div>
+
+<div class="modal" id="settingsModal"><div class="box">
+<h2>Cài đặt biên lai</h2>
+<div class="grid">
+<div class="field"><label>Tên hệ thống</label><input id="setTitle"></div>
+<div class="field"><label>Địa chỉ</label><input id="setAddress"></div>
+<div class="field"><label>STK + ngân hàng</label><input id="setBank"></div>
+<div class="field"><label>Giá điện mặc định (đ/kWh)</label><input id="setElec" type="number"></div>
+<div class="field"><label>Phạt quá hạn (đ/ngày)</label><input id="setLate" type="number"></div>
+</div>
+<div class="hint">Trên biên lai, <b>Thông tin người nhận sẽ luôn là tên phòng</b>. Ví dụ phòng P201 thì biên lai ghi “Thông tin người nhận: P201”. Không còn cố định “Thảo + My”.</div>
+<div class="actions"><button class="secondary" onclick="closeM('settingsModal')">Hủy</button><button onclick="saveSettings()">Lưu</button></div>
+</div></div>
+
+<script>
+const KEY='tro_62_htt_v3';
+let state=JSON.parse(localStorage.getItem(KEY)||'null')||{
+ rooms:[],settings:{
+  title:'HỆ THỐNG CĂN HỘ 62 HOÀNG THẾ THIỆN',
+  address:'62 Hoàng Thế Thiện, Cẩm Lệ, TP Đà Nẵng',
+  bank:'0905318689 (VietinBank - Phan Thi Ly Na)',elec:4000,late:100000
+ }
+};
+let editId=null,meterId=null;
+const month=document.getElementById('month');
+const d=new Date();month.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');month.onchange=render;
+
+function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
+function money(n){return new Intl.NumberFormat('vi-VN').format(Math.round(n||0))+' ₫'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function dateObj(s){let [y,m,dd]=s.split('-').map(Number);return new Date(y,m-1,dd)}
+function fmt(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
+function days(y,m){return new Date(y,m,0).getDate()}
+function period(r,key){
+ let [y,m]=key.split('-').map(Number), day=dateObj(r.moveIn).getDate();
+ let prevM=m-1, prevY=y;if(prevM<1){prevM=12;prevY--}
+ let start=new Date(prevY,prevM-1,Math.min(day,days(prevY,prevM)));
+ let end=new Date(y,m-1,Math.min(day,days(y,m)));
+ return {start,end,text:fmt(start)+' - '+fmt(end)}
+}
+function paymentWindow(r,key){
+ let p=period(r,key);
+ let from=new Date(p.end);
+ from.setDate(from.getDate()+1);
+ let to=new Date(from);
+ to.setDate(to.getDate()+2);
+ return fmt(from)+' đến '+fmt(to);
+}
+function rec(r,key){return r.months?.[key]||null}
+function oldMeterValue(r,key){
+ let ks=Object.keys(r.months||{}).filter(k=>k<key).sort();
+ if(ks.length)return Number(r.months[ks[ks.length-1]].newv||0);
+ return Number(r.initialMeter||0)
+}
+function calc(r,key){
+ let x=rec(r,key);if(!x||x.newv===''||x.newv==null)return null;
+ let old=Number(x.old),nw=Number(x.newv),used=Math.max(0,nw-old);
+ let elec=used*Number(r.elecPrice||state.settings.elec),water=Number(r.people)*Number(r.waterPrice),total=Number(r.rent)+elec+water;
+ return {old,nw,used,elec,water,total,paid:!!x.paid}
+}
+function render(){
+ let key=month.value,html='',due=0,paid=0,active=0;
+ state.rooms.forEach(r=>{
+  let c=calc(r,key),p=period(r,key);if(c){active++;due+=c.total;if(c.paid)paid+=c.total}
+  html+=`<tr>
+  <td><b>${esc(r.room)}</b></td><td>${r.people}</td><td>${money(r.rent)}</td><td>${fmt(dateObj(r.moveIn))}</td><td>${p.text}</td>
+  <td>${c?c.old:'—'}</td><td>${c?c.nw:'—'}</td><td>${c?c.used:'—'}</td><td>${c?money(c.elec):'—'}</td><td>${c?money(c.water):'—'}</td><td class="money">${c?money(c.total):'—'}</td>
+  <td class="${c?(c.paid?'paid':'unpaid'):''}">${c?(c.paid?'Đã thu':'Chưa thu'):'Chưa nhập điện'}</td>
+  <td><button onclick="openMeter('${r.id}')">⚡ Nhập điện</button>${c?` <button class="success" onclick="togglePaid('${r.id}')">${c.paid?'Bỏ đã thu':'Đã thu'}</button> <button class="secondary" onclick="receipt('${r.id}')">📄 Biên lai PDF</button>`:''}
+  <button class="secondary" onclick="openRoom('${r.id}')">Sửa</button> <button class="danger" onclick="removeRoom('${r.id}')">Xóa</button></td></tr>`
+ });
+ if(!state.rooms.length)html='<tr><td colspan="13" class="empty">Chưa có phòng. Hãy thêm danh sách phòng ban đầu.</td></tr>';
+ document.getElementById('tbody').innerHTML=html;
+ document.getElementById('roomCount').textContent=state.rooms.length;document.getElementById('activeCount').textContent=active;
+ document.getElementById('due').textContent=money(due);document.getElementById('paidRemain').textContent=money(paid)+' / '+money(due-paid)
+}
+function openRoom(id=null){
+ editId=id;let r=id?state.rooms.find(x=>x.id===id):null;
+ document.getElementById('roomTitle').textContent=r?'Sửa phòng':'Thêm phòng';
+ document.getElementById('room').value=r?.room||'';document.getElementById('people').value=r?.people??1;document.getElementById('rent').value=r?.rent??3300000;
+ document.getElementById('moveIn').value=r?.moveIn||'';document.getElementById('waterPrice').value=r?.waterPrice??100000;document.getElementById('elecPrice').value=r?.elecPrice??state.settings.elec;document.getElementById('initialMeter').value=r?.initialMeter??0;
+ document.getElementById('roomModal').classList.add('show')
+}
+function saveRoom(){
+ let name=document.getElementById('room').value.trim(),mi=document.getElementById('moveIn').value;if(!name||!mi){alert('Vui lòng nhập tên phòng và ngày vào ở.');return}
+ let old=editId?state.rooms.find(x=>x.id===editId):null;
+ let r={id:editId||crypto.randomUUID(),room:name,people:+document.getElementById('people').value||0,rent:+document.getElementById('rent').value||0,moveIn:mi,waterPrice:+document.getElementById('waterPrice').value||0,elecPrice:+document.getElementById('elecPrice').value||state.settings.elec,initialMeter:+document.getElementById('initialMeter').value||0,months:old?.months||{}};
+ if(old)state.rooms[state.rooms.findIndex(x=>x.id===editId)]=r;else state.rooms.push(r);closeM('roomModal');save()
+}
+function openMeter(id){
+ meterId=id;let r=state.rooms.find(x=>x.id===id),key=month.value,x=rec(r,key);
+ document.getElementById('meterRoom').value=r.room;document.getElementById('meterMonth').value=key;document.getElementById('oldMeter').value=x?.old??oldMeterValue(r,key);document.getElementById('newMeter').value=x?.newv??'';
+ document.getElementById('meterHint').innerHTML='Kỳ tiền: <b>'+period(r,key).text+'</b><br>Bạn chỉ cần nhập số điện mới.';
+ document.getElementById('meterModal').classList.add('show')
+}
+function saveMeter(){
+ let r=state.rooms.find(x=>x.id===meterId),key=month.value,n=document.getElementById('newMeter').value;if(n===''){alert('Vui lòng nhập số điện mới.');return}
+ r.months[key]={old:Number(document.getElementById('oldMeter').value||0),newv:Number(n),paid:r.months[key]?.paid||false};closeM('meterModal');save()
+}
+function togglePaid(id){let r=state.rooms.find(x=>x.id===id),key=month.value;if(r.months[key]){r.months[key].paid=!r.months[key].paid;save()}}
+function removeRoom(id){let r=state.rooms.find(x=>x.id===id);if(confirm('Xóa phòng '+r.room+' và toàn bộ dữ liệu tháng của phòng này?')){state.rooms=state.rooms.filter(x=>x.id!==id);save()}}
+function openSettings(){
+ let s=state.settings;document.getElementById('setTitle').value=s.title;document.getElementById('setAddress').value=s.address;document.getElementById('setBank').value=s.bank;document.getElementById('setElec').value=s.elec;document.getElementById('setLate').value=s.late;document.getElementById('settingsModal').classList.add('show')
+}
+function saveSettings(){state.settings.title=document.getElementById('setTitle').value.trim();state.settings.address=document.getElementById('setAddress').value.trim();state.settings.bank=document.getElementById('setBank').value.trim();state.settings.elec=+document.getElementById('setElec').value||0;state.settings.late=+document.getElementById('setLate').value||0;closeM('settingsModal');save()}
+function closeM(id){document.getElementById(id).classList.remove('show')}
+
+function receipt(id){
+ let r=state.rooms.find(x=>x.id===id),key=month.value,c=calc(r,key);if(!c){alert('Chưa có số điện tháng này.');return}
+ let p=period(r,key),s=state.settings;
+ let html=`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Biên lai ${esc(r.room)}</title><style>
+ body{font-family:Arial,sans-serif;margin:0;padding:20px;color:#111}.receipt{max-width:1000px;margin:auto}.head{text-align:center}.head h1{font-size:23px;margin:0 0 18px}.info{display:flex;justify-content:space-between;gap:30px;margin-bottom:12px;line-height:1.5}.right{text-align:right}.title{text-align:center;font-size:19px;font-weight:bold;margin:12px 0}
+ table{width:100%;border-collapse:collapse}th,td{border:1px solid #111;padding:8px;text-align:center}th{background:#fff200}td:nth-child(2){text-align:left}.total{font-weight:bold;background:#fff200}.note{margin-top:25px;font-size:15px;line-height:1.65}.line{margin:7px 0}@page{size:A4;margin:12mm}@media print{body{padding:0}}
+ </style></head><body><div class="receipt">
+ <div class="head"><h1>${esc(s.title)}</h1></div>
+ <div class="info"><div><b>Địa chỉ:</b> ${esc(s.address)}<br><b>Thông tin người nhận:</b> ${esc(r.room)}</div><div class="right"><b>Số phòng:</b> ${esc(r.room)}<br><b>Thời gian ở:</b> ${p.text}</div></div>
+ <div class="title">HÓA ĐƠN TIỀN PHÒNG</div>
+ <table><thead><tr><th>STT</th><th>Nội dung</th><th>Đơn vị</th><th>Số cũ</th><th>Số mới</th><th>Số tiêu thụ</th><th>Đơn giá</th><th>Thành tiền</th><th>Ghi chú</th></tr></thead>
+ <tbody><tr><td>1</td><td>Tiền phòng</td><td>phòng</td><td></td><td></td><td></td><td>${money(r.rent).replace(' ₫','')}</td><td>${money(r.rent).replace(' ₫','')}</td><td></td></tr>
+ <tr><td>2</td><td>Tiền điện</td><td>kW</td><td>${c.old}</td><td>${c.nw}</td><td>${c.used}</td><td>${money(r.elecPrice).replace(' ₫','')}</td><td>${money(c.elec).replace(' ₫','')}</td><td></td></tr>
+ <tr><td>3</td><td>Tiền nước + giặt + rác</td><td>người</td><td></td><td></td><td>${r.people}</td><td>${money(r.waterPrice).replace(' ₫','')}</td><td>${money(c.water).replace(' ₫','')}</td><td></td></tr>
+ <tr class="total"><td colspan="6">TỔNG CỘNG</td><td colspan="3">${money(c.total)}</td></tr></tbody></table>
+ <div class="note"><div class="line"><b>STK người nhận:</b> ${esc(s.bank)}</div><div class="line"><b>Lưu ý:</b> Vui lòng thanh toán trong vòng <b>3 ngày</b>, từ <b>${paymentWindow(r,key)}</b>. Nếu quá hạn mà chưa thanh toán sẽ bị phạt <b>${money(s.late)}/ngày</b>.</div></div>
+ </div></body></html>`;
+ let w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),300)
+}
+function backup(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='sao-luu-tien-tro.json';a.click()}
+function restore(e){let f=e.target.files[0];if(!f)return;let rd=new FileReader();rd.onload=()=>{try{let x=JSON.parse(rd.result);if(!x.rooms||!x.settings)throw 0;state=x;save();alert('Khôi phục thành công')}catch{alert('File sao lưu không hợp lệ')}};rd.readAsText(f);e.target.value=''}
+render()
+</script>
+</body>
+</html>
